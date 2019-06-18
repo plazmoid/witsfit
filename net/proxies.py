@@ -1,7 +1,7 @@
 import requests
 import logging
 from random import choice
-
+#TODO: висит селери и парсит себе прокси, периодически проверяет и отдаёт рабочие по запросу
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
@@ -36,19 +36,26 @@ def is_proxy_available(proxy, p_type):
 
 def _check_proxy_list(proxy_list, ptype):
     for p in proxy_list:
-        if is_proxy_available(p, ptype):
-            return p
+        try:
+            if p != '' and is_proxy_available(p, ptype):
+                return p
+        except requests.exceptions.ProxyError:
+            continue
     else:
         return False
 
 def get_working_proxy(ptype, **kwargs):
     while True:
-        plist = _get_proxy_list(ptype, **kwargs).split('\r\n')
-        logger.info(f'Got list: {plist}')
-        while len(plist) > 1:
+        plist = _get_proxy_list(ptype, **kwargs).split('\r\n')[:-1]
+        logger.info(f'Got list of {len(plist)} proxies')
+        if len(plist) > 1:
             proxy = _check_proxy_list(plist, ptype)
             if proxy:
                 return proxy
+
+def start():
+    print(get_working_proxy('https'))
+    
 
 if __name__ == '__main__':
     #print(is_proxy_available('13.52.154.16:3128', 'https'))
