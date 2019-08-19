@@ -1,86 +1,85 @@
-#!venv/bin/python3
+#!/usr/bin/env python3
 from cmd import Cmd
+import argparse
+import settings
 import sys
 import importlib
-
-__author__ = 'p1azm0id'
-__version__ = '0.0.3'
+import requests
 
 ALL_MODULES = ['net.proxies', 'memlimiter'] #TODO: сканировать директории
 ENABLED_MODULES = [] #TODO: thread pool
-
-INTRO = f"""
-WITSFIT ({__version__}) - WTF IS IT (obviously i can't come up with a simple name lulz)
-Big helper for the p1azm0id's dumb system
-
-***************************************
-
-Enabled modules: {', '.join(ENABLED_MODULES)}
-"""
-        
-def do_nope(self):
-    'Do literally nothing'
-    print(f'did nothing {self}')
 
 class CmdException(Exception): pass
 
 class CmdError(Exception): pass
 
 class Witsfit(Cmd):
-    intro = INTRO
-    prompt = 'wtf>'
-    
-    def __init__(self, *args, **kwargs):
-        self.svc_commands = ['on', 'off', 'enable_aexec', 'disable_aexec']
-        self.do_nop = do_nope
+    intro = settings.INTRO
+    prompt = 'wtf> '
+
+    def __init__(self, *args, host=None, **kwargs):
+        if not host:
+            raise Exception('Wtf where is the host')
+        self.host = host
+        self.session = requests.Session()
+        self.commands = ['on', 'off', 'on_aex', 'off_aex']
         super().__init__(*args, **kwargs)
-    
+
+    def parse_cmd(self, cmd):
+        cmd = cmd.replace(' ', '/')
+        try:
+            return self.session.get(f'http://{self.host}/{cmd}') #HTTPS
+        except ConnectionRefusedError:
+            return 'Connection error'
+
     def do_EOF(self, arg):
         sys.exit(0)
 
     def do_svc(self, arg):
         'Managing services'
-        try:
-            op, module = arg.split()
-        except ValueError:
-            raise CmdException(f'Module was expected')
-        
-        if module not in ALL_MODULES:
-            raise CmdException(f'Unknown module "{module}"')
-        if op == 'on':
-            if module in ENABLED_MODULES:
-                raise CmdException(f'Module "{module}" is already running')
-            module = importlib.import_module(module)
-            module.start()
-        elif op == 'off':
-            if module not in ENABLED_MODULES:
-                raise CmdException(f'Module "{module}" is already stopped')
-        elif op == 'enable_aexec':
-            raise CmdException('Not implemented')
-        elif op == 'disable_aexec':
-            raise CmdException('Not implemented')
-        else:
-            raise CmdException(f'"{op}" is not a command')
-            
-        
+        print(self.parse_cmd(arg))
+#         try:
+#             op, module = arg.split()
+#         except ValueError:
+#             raise CmdException(f'Module was expected')
+# 
+#         if module not in ALL_MODULES:
+#             raise CmdException(f'Unknown module "{module}"')
+#         if op == 'on':
+#             if module in ENABLED_MODULES:
+#                 raise CmdException(f'Module "{module}" is already running')
+#             module = importlib.import_module(module)
+#             #module.start.apply_async()
+#             module.start()
+#         elif op == 'off':
+#             if module not in ENABLED_MODULES:
+#                 raise CmdException(f'Module "{module}" is already stopped')
+#         elif op == 'on_aex':
+#             raise CmdException('Not implemented')
+#         elif op == 'off_aex':
+#             raise CmdException('Not implemented')
+#         else:
+#             raise CmdException(f'"{op}" is not a command')
+
+
     def complete_svc(self, text, line, begidx, endidx):
         #print(f'*** "{text}", "{line}", {begidx}, {endidx}"')
         result = []
-        for cmd in self.svc_commands:
+        for cmd in self.commands:
             if cmd.startswith(text):
                 result.append(cmd)
             if cmd in line:
                 if cmd == text:
-                    return [text + ' '] 
+                    return [text + ' ']
                 else:
                     if text == '':
                         return ALL_MODULES
                     else:
                         return [mod for mod in ALL_MODULES if mod.startswith(text)]
         if begidx == endidx:
-            return self.svc_commands
+            return self.commands
         return result
-        
+
     def cmdloop(self, intro=None):
         """Repeatedly issue a prompt, accept input, parse an initial prefix
         off the received input, and dispatch to action methods, passing them
@@ -127,7 +126,7 @@ class Witsfit(Cmd):
                 except CmdException as e:
                     print('ERR:' + str(e))
                 except KeyboardInterrupt:
-                    sys.exit(0)
+                    print('KeyboardInterrupt')
             self.postloop()
         finally:
             if self.use_rawinput and self.completekey:
@@ -138,6 +137,30 @@ class Witsfit(Cmd):
                     pass
 
 
-if __name__ == '__main__':
-    instance = Witsfit().cmdloop()
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('cmd', nargs='*', help='Command to execute') #non-interactive
+    parser.add_argument('-c', '--connect', action='store', default='localhost', #interactive
+                        dest='host', help=f'server or server:port to connect')
+    parser.add_argument('-d', '--debug', action='store_true',
+                        dest='debug', help='Debug mode')
+    parser.add_argument('-p', action='store_const', dest='port', const=settings.DEFAULT_PORT,
+                        help=f'Start server on port (default is {settings.DEFAULT_PORT})')
+    args = parser.parse_args()
     
+    
+    if args.port:
+        #TODO: проверять на запущенность
+        server = importlib.import_module('server')
+        server.init(args.port)
+    else:
+        witsfit = Witsfit(host=args.host)
+        if args.cmd:
+            witsfit.parse_cmd(args.cmd)    
+        else:
+            witsfit.cmdloop()
+
+
+if __name__ == '__main__':
+    main()
+
