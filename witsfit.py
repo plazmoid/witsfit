@@ -162,5 +162,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    #main()
+    from plugins import WDecoder, plugged
+    WDecoder()
+    print(plugged)
+
 
