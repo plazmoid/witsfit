@@ -3,10 +3,11 @@ from cmd import Cmd
 import argparse
 import settings
 import sys
+import os
 import importlib
-import requests
+from os.path import join as os_join
 
-ALL_MODULES = ['net.proxies', 'memlimiter'] #TODO: сканировать директории
+ALL_MODULES = importlib.import_module(settings.MODULES_PATH).ALL_MODULES
 ENABLED_MODULES = [] #TODO: thread pool
 
 class CmdException(Exception): pass
@@ -17,49 +18,51 @@ class Witsfit(Cmd):
     intro = settings.INTRO
     prompt = 'wtf> '
 
-    def __init__(self, *args, host=None, **kwargs):
-        if not host:
-            raise Exception('Wtf where is the host')
-        self.host = host
-        self.session = requests.Session()
+    def __init__(self, *args, **kwargs):
+        # if not host:
+        #     raise Exception('Wtf where is the host')
+        # self.host = host
+        # self.session = requests.Session()
         self.commands = ['on', 'off', 'on_aex', 'off_aex']
         super().__init__(*args, **kwargs)
 
-    def parse_cmd(self, cmd):
-        cmd = cmd.replace(' ', '/')
-        try:
-            return self.session.get(f'http://{self.host}/{cmd}') #HTTPS
-        except ConnectionRefusedError:
-            return 'Connection error'
+    # def parse_cmd(self, cmd):
+    #     cmd = cmd.replace(' ', '/')
+    #     try:
+    #         return self.session.get(f'http://{self.host}/{cmd}') #HTTPS
+    #     except ConnectionRefusedError:
+    #         return 'Connection error'
 
     def do_EOF(self, arg):
         sys.exit(0)
 
     def do_svc(self, arg):
         'Managing services'
-        print(self.parse_cmd(arg))
-#         try:
-#             op, module = arg.split()
-#         except ValueError:
-#             raise CmdException(f'Module was expected')
-# 
-#         if module not in ALL_MODULES:
-#             raise CmdException(f'Unknown module "{module}"')
-#         if op == 'on':
-#             if module in ENABLED_MODULES:
-#                 raise CmdException(f'Module "{module}" is already running')
-#             module = importlib.import_module(module)
-#             #module.start.apply_async()
-#             module.start()
-#         elif op == 'off':
-#             if module not in ENABLED_MODULES:
-#                 raise CmdException(f'Module "{module}" is already stopped')
-#         elif op == 'on_aex':
-#             raise CmdException('Not implemented')
-#         elif op == 'off_aex':
-#             raise CmdException('Not implemented')
-#         else:
-#             raise CmdException(f'"{op}" is not a command')
+        try:
+            args = ''
+            op, *module = arg.split()
+            if len(module) > 1:
+                args = ' '.join(module[1:])
+            module = module[0]
+        except (ValueError, IndexError):
+            raise CmdException(f'Module was expected')
+
+        if module not in ALL_MODULES:
+            raise CmdException(f'Unknown module "{module}"')
+        if op == 'on':
+            if module in ENABLED_MODULES:
+                raise CmdException(f'Module "{module}" is already running')
+            module = ALL_MODULES[module]
+            print(module.process(args))
+        elif op == 'off':
+            if module not in ENABLED_MODULES:
+                raise CmdException(f'Module "{module}" is already stopped')
+        elif op == 'on_aex':
+            raise CmdException('Not implemented')
+        elif op == 'off_aex':
+            raise CmdException('Not implemented')
+        else:
+            raise CmdException(f'"{op}" is not a command')
 
 
     def complete_svc(self, text, line, begidx, endidx):
@@ -137,33 +140,36 @@ class Witsfit(Cmd):
                     pass
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('cmd', nargs='*', help='Command to execute') #non-interactive
-    parser.add_argument('-c', '--connect', action='store', default='localhost', #interactive
-                        dest='host', help=f'server or server:port to connect')
-    parser.add_argument('-d', '--debug', action='store_true',
-                        dest='debug', help='Debug mode')
-    parser.add_argument('-p', action='store_const', dest='port', const=settings.DEFAULT_PORT,
-                        help=f'Start server on port (default is {settings.DEFAULT_PORT})')
-    args = parser.parse_args()
-    
-    
-    if args.port:
-        #TODO: проверять на запущенность
-        server = importlib.import_module('server')
-        server.init(args.port)
-    else:
-        witsfit = Witsfit(host=args.host)
-        if args.cmd:
-            witsfit.parse_cmd(args.cmd)    
-        else:
-            witsfit.cmdloop()
-
-
 if __name__ == '__main__':
-    #main()
-    from plugins import WProxies
-    proxies = WProxies()
-    print('\n'.join(str(proxy) for proxy in proxies.process(anon_lvl='transparent')))
+    #создаю для каждого импортнутого класса completer путём впихивания функции do_* в класс Witsfit
+    Witsfit().cmdloop()
+    # main()
+    # from plugins import WProxies
+    # proxies = WProxies()
+    # print('\n'.join(str(proxy) for proxy in proxies.process(anon_lvl='transparent')))
+
+# def main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('cmd', nargs='*', help='Command to execute') #non-interactive
+#     parser.add_argument('-c', '--connect', action='store', default='localhost', #interactive
+#                         dest='host', help=f'server or server:port to connect')
+#     parser.add_argument('-d', '--debug', action='store_true',
+#                         dest='debug', help='Debug mode')
+#     parser.add_argument('-p', action='store_const', dest='port', const=settings.DEFAULT_PORT,
+#                         help=f'Start server on port (default is {settings.DEFAULT_PORT})')
+#     args = parser.parse_args()
+    
+    
+#     if args.port:
+#         #TODO: проверять на запущенность
+#         server = importlib.import_module('server')
+#         server.init(args.port)
+#     else:
+#         witsfit = Witsfit(host=args.host)
+#         if args.cmd:
+#             witsfit.parse_cmd(args.cmd)    
+#         else:
+#             witsfit.cmdloop()
+
+
 

@@ -1,3 +1,11 @@
 from .wplugin import WPlugin, plugged
-from .decoders import WDecoder
-from .proxies import WProxies
+from importlib import import_module
+
+ALL_MODULES = {
+    'decoders': 'WDecoder',
+    'proxies': 'WProxies'
+}
+
+for k, v in ALL_MODULES.items():
+    module = import_module(f'plugins.{k}')
+    ALL_MODULES[k] = getattr(module, v)()

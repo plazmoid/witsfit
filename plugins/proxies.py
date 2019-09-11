@@ -6,6 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+__all__ = ['WProxies']
 
 class WProxies(WPlugin):
 
@@ -26,7 +27,7 @@ class WProxies(WPlugin):
             },
             'net_timeout': 4,
             'max_workers': 50,
-            'anon_lvl': WProxies.ANON,
+            'anon_lvl': WProxies.TRANSPARENT,
             'proxy_type': 'https'
         }
 
@@ -48,7 +49,7 @@ class WProxies(WPlugin):
         return req.text
 
     def is_proxy_available(self, proxy, p_type):
-        logger.info(f'Checking {proxy}')
+        #logger.info(f'Checking {proxy}')
         try:
             req = requests.get('https://2ip.ru', proxies={p_type: proxy}, headers=self.cfg['headers'], timeout=self.cfg['net_timeout'])
         except:
@@ -84,7 +85,7 @@ class WProxies(WPlugin):
                     best_proxy = futures[future]
         return best_proxy, min_elapsed_time
 
-    def process(self, **kwargs):
+    def process(self, *args, **kwargs):
         self.config(**kwargs)
         proxies = []
         logger.info(f"Search countries: {self.cfg['countries']}")

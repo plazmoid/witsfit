@@ -5,12 +5,14 @@ URL = 'url'
 ROT = 'rot'
 BIN = 'bin'
 
+__all__ = ['WDecoder']
+
 class WDecoderException(Exception): pass
 
 class WDecoder(WPlugin):
     
     def process(self, cmd_args, **kwargs):
-        parser = ArgumentParser()
+        parser = ArgumentParser() #FIXME: перепилить help срочна блямдьт
         parser.add_argument('-t', '--type', dest='type', help='Type of encoded string',
                             choices=(URL, ROT, BIN), action='store')
         parser.add_argument('-e', '--encode', dest='encode', action='store_true', 
@@ -83,11 +85,11 @@ class WDecoder(WPlugin):
         possible_encodings = ['utf-8', 'cp1251', 'cp866']
         encoding = possible_encodings[0]
         if params:
-            params = params.strip()
+            params = params.strip().strip('"').strip("'")
             if params in possible_encodings:
                 encoding = params
             else:
-                print(f'Warning: encoding {params} is not found, using {encoding}')
+                print(f'Warning: encoding {params} not found, using {encoding}')
         if encode:
             return f'{delim}'.join(f'{delim}'.join('{:08b}'.format(i) for i in c.encode(encoding)) for c in data)
         else:
