@@ -163,8 +163,7 @@ def main():
 
 if __name__ == '__main__':
     #main()
-    from plugins import WDecoder, plugged
-    WDecoder()
-    print(plugged)
-
+    from plugins import WProxies
+    proxies = WProxies()
+    print('\n'.join(str(proxy) for proxy in proxies.process(anon_lvl='transparent')))
 
