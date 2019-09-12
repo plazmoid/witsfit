@@ -1,4 +1,4 @@
-from .wplugin import WPlugin, plugged
+from .wplugin import WPlugin
 from importlib import import_module
 
 ALL_MODULES = {

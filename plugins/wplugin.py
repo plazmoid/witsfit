@@ -7,11 +7,12 @@ plugged = {}
 class WPlugin(ABC):
     
     def run(self, *args, **kwargs):
+        sigint_once = False
         retval = ''
         parent_pipe, child_pipe = mp.Pipe()
         proc = mp.Process(target=self.__run_process, args=(child_pipe,) + args, kwargs=kwargs)
-        proc.start() # ловить прерывания
         try:
+            proc.start()
             while True:
                 try:
                     if parent_pipe.poll():
@@ -21,7 +22,11 @@ class WPlugin(ABC):
                         break
                     sleep(0.1)
                 except KeyboardInterrupt:
-                    #proc.kill()
+                    if sigint_once:
+                        print('\nHard kill')
+                        proc.kill()
+                    else:
+                        sigint_once = True
                     pass
         finally:
             proc.join()
