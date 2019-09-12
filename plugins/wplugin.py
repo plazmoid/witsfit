@@ -52,9 +52,10 @@ class WPluginForking(WPlugin):
             if pid == 0:
                 signal.signal(signal.SIGINT, signal.SIG_IGN)
                 self.process(*args, **kwargs)
-                os.wait()
             elif pid == -1:
                 return -1
+            else: # UNIX SOCKETS
+                os.wait()
         finally:
             if pid == 0:
                 os._exit(0)
