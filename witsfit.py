@@ -139,14 +139,13 @@ class Witsfit(Cmd):
                 except ImportError:
                     pass
 
+    def emptyline(self):
+        pass
+
 
 if __name__ == '__main__':
     #создаю для каждого импортнутого класса completer путём впихивания функции do_* в класс Witsfit
     Witsfit().cmdloop()
-    # main()
-    # from plugins import WProxies
-    # proxies = WProxies()
-    # print('\n'.join(str(proxy) for proxy in proxies.process(anon_lvl='transparent')))
 
 # def main():
 #     parser = argparse.ArgumentParser()

@@ -95,6 +95,7 @@ class WDecoder(WPlugin):
         else:
             data = data.split(' ')
             if len(data) == 1:
+                data = data[0]
                 data = [data[i:i+8] for i in range(0, len(data), 8)]
             else:
                 for i in range(len(data)):
