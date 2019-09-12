@@ -39,8 +39,8 @@ class Witsfit(Cmd):
     def do_svc(self, arg):
         'Managing services'
         try:
-            args = ''
             op, *module = arg.split()
+            args = ''
             if len(module) > 1:
                 args = ' '.join(module[1:])
             module = module[0]
@@ -53,7 +53,7 @@ class Witsfit(Cmd):
             if module in ENABLED_MODULES:
                 raise CmdException(f'Module "{module}" is already running')
             module = ALL_MODULES[module]
-            print(module.process(args))
+            print(module.run(args))
         elif op == 'off':
             if module not in ENABLED_MODULES:
                 raise CmdException(f'Module "{module}" is already stopped')
@@ -76,7 +76,7 @@ class Witsfit(Cmd):
                     return [text + ' ']
                 else:
                     if text == '':
-                        return ALL_MODULES
+                        return list(ALL_MODULES.keys())
                     else:
                         return [mod for mod in ALL_MODULES if mod.startswith(text)]
         if begidx == endidx:

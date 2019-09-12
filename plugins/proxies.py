@@ -94,9 +94,8 @@ class WProxies(WPlugin):
                 plist = self._get_proxy_list(self.cfg['proxy_type'], country=country).split('\r\n')[:-1]
                 logger.info(f'Got list of {len(plist)} proxies')
                 if len(plist) > 1:
-                    proxy = self._check_proxy_list(plist, self.cfg['proxy_type']) # подрубить асинхроночки и отдавать самый шустрый прокси
+                    proxy = self._check_proxy_list(plist, self.cfg['proxy_type'])
                     if proxy[0]:
                         proxies.append(proxy + (country,))
-        except KeyboardInterrupt:
-            return proxies
-        return proxies if proxies else ('No proxies available now. Wait or extend countries list',)
+        finally:
+            return '\n'.join(str(p) for p in proxies) if proxies else 'No proxies available now. Wait or extend countries list'
