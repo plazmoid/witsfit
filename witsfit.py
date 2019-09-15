@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 from cmd import Cmd
+from importlib import import_module
 import argparse
 import settings
 import sys
-import os
-import importlib
-from os.path import join as os_join
 
-ALL_MODULES = importlib.import_module(settings.MODULES_PATH).ALL_MODULES
-ENABLED_MODULES = [] #TODO: thread pool
+ALL_MODULES = import_module(settings.MODULES_PATH).ALL_MODULES
+ENABLED_MODULES = []
 
 class CmdException(Exception): pass
 
@@ -19,19 +17,12 @@ class Witsfit(Cmd):
     prompt = 'wtf> '
 
     def __init__(self, *args, **kwargs):
-        # if not host:
-        #     raise Exception('Wtf where is the host')
-        # self.host = host
-        # self.session = requests.Session()
         self.commands = ['on', 'off', 'on_aex', 'off_aex']
         super().__init__(*args, **kwargs)
 
-    # def parse_cmd(self, cmd):
-    #     cmd = cmd.replace(' ', '/')
-    #     try:
-    #         return self.session.get(f'http://{self.host}/{cmd}') #HTTPS
-    #     except ConnectionRefusedError:
-    #         return 'Connection error'
+    def run_module(self, module, args):
+        module = ALL_MODULES[module]
+        print(module.run(args))
 
     def do_EOF(self, arg):
         sys.exit(0)
@@ -52,8 +43,7 @@ class Witsfit(Cmd):
         if op == 'on':
             if module in ENABLED_MODULES:
                 raise CmdException(f'Module "{module}" is already running')
-            module = ALL_MODULES[module]
-            print(module.run(args))
+            self.run_module(module, args)
         elif op == 'off':
             if module not in ENABLED_MODULES:
                 raise CmdException(f'Module "{module}" is already stopped')
@@ -142,9 +132,23 @@ class Witsfit(Cmd):
     def emptyline(self):
         pass
 
+    @classmethod
+    def make_do(cls):
+        def gen_do(fname):
+            def do_smth(self, args):
+                self.run_module(fname.replace('do_', ''), args)
+
+            do_smth.__name__ = fname
+            return do_smth
+
+        for module in ALL_MODULES:
+            do_fun = gen_do(f'do_{module}')
+            setattr(cls, do_fun.__name__, do_fun)
+
+
 
 if __name__ == '__main__':
-    #создаю для каждого импортнутого класса completer путём впихивания функции do_* в класс Witsfit
+    Witsfit.make_do()
     Witsfit().cmdloop()
 
 # def main():
