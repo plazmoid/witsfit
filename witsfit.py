@@ -1,28 +1,37 @@
 #!/usr/bin/env python3
 from cmd import Cmd
 from importlib import import_module
+from utils import CmdException
 import argparse
 import settings
 import sys
 
+
 ALL_MODULES = import_module(settings.MODULES_PATH).ALL_MODULES
-ENABLED_MODULES = []
-
-class CmdException(Exception): pass
-
-class CmdError(Exception): pass
 
 class Witsfit(Cmd):
     intro = settings.INTRO
     prompt = 'wtf> '
+    instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = object.__new__(cls, *args, **kwargs)
+        return cls.instance
 
     def __init__(self, *args, **kwargs):
-        self.commands = ['on', 'off', 'on_aex', 'off_aex']
+        self.commands = ['start', 'stop', 'enable', 'disable']
         super().__init__(*args, **kwargs)
 
     def run_module(self, module, args):
         module = ALL_MODULES[module]
-        print(module.run(args))
+        #if module in self.enabled_modules:
+        #    raise CmdException(f'Module "{module}" is already running')
+        #self.enabled_modules.append(module)
+        #print(Witsfit.enabled_modules)
+        retval = module.run(args)
+        #self.enabled_modules.remove(module)
+        print(retval)
 
     def do_EOF(self, arg):
         sys.exit(0)
@@ -41,11 +50,9 @@ class Witsfit(Cmd):
         if module not in ALL_MODULES:
             raise CmdException(f'Unknown module "{module}"')
         if op == 'on':
-            if module in ENABLED_MODULES:
-                raise CmdException(f'Module "{module}" is already running')
             self.run_module(module, args)
         elif op == 'off':
-            if module not in ENABLED_MODULES:
+            if module not in self.enabled_modules:
                 raise CmdException(f'Module "{module}" is already stopped')
         elif op == 'on_aex':
             raise CmdException('Not implemented')
@@ -145,11 +152,12 @@ class Witsfit(Cmd):
             do_fun = gen_do(f'do_{module}')
             setattr(cls, do_fun.__name__, do_fun)
 
-
+Witsfit.make_do()
 
 if __name__ == '__main__':
-    Witsfit.make_do()
+    import processes
     Witsfit().cmdloop()
+    pass
 
 # def main():
 #     parser = argparse.ArgumentParser()

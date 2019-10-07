@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from time import sleep
+from utils import CmdException
 import multiprocessing as mp
 import os
 import signal
@@ -7,18 +8,22 @@ import signal
 __all__ = ['WPlugin', 'WPluginForking']
 
 class WPlugin(ABC):
-    
-    def run(self, *args, **kwargs):
+    running = False
 
+    def run(self, *args, **kwargs):
+        
         def __run_process(pipe, *args, **kwargs):
             with pipe:
                 pipe.send(self.process(*args, **kwargs))
 
+        if self.running:
+            raise CmdException(f'Module "{self.__class__.__name__}" is already running')
         sigint_once = False
         retval = ''
         parent_pipe, child_pipe = mp.Pipe()
         proc = mp.Process(target=__run_process, args=(child_pipe,) + args, kwargs=kwargs)
         try:
+            self.running = True
             proc.start()
             while True:
                 try:
@@ -37,6 +42,7 @@ class WPlugin(ABC):
                     pass
         finally:
             proc.join()
+            self.running = False
         return retval
 
     @abstractmethod
@@ -50,6 +56,7 @@ class WPluginForking(WPlugin):
         pid = os.fork()
         try:
             if pid == 0:
+                self.running = True
                 signal.signal(signal.SIGINT, signal.SIG_IGN)
                 self.process(*args, **kwargs)
             elif pid == -1:
@@ -59,3 +66,4 @@ class WPluginForking(WPlugin):
         finally:
             if pid == 0:
                 os._exit(0)
+            self.running = False

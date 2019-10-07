@@ -4,6 +4,7 @@ from importlib import import_module
 ALL_MODULES = {
     'decoders': 'WDecoder',
     'proxies': 'WProxies',
+    'backup': 'WBackup',
     'procmon': 'WProcessMonitor'
 }
 
